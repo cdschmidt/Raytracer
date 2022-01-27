@@ -8,11 +8,11 @@
 #define HEIGHT 1024
  
 int main(int argc, char *argv[]){
-    int width = WIDTH;
-    int height = HEIGHT;
+    int width = 0;
+    int height = 0;
     std::ifstream inputFile;
     std::string line;
-    std::cout << argc << std::endl;
+    //If file is passsed into command line argument then opens the file and gets the width and height
     if(argc > 1){
         std::string inputFileName = argv[1];
         std::cout << inputFileName << std::endl;
@@ -34,6 +34,15 @@ int main(int argc, char *argv[]){
         }
         inputFile.close();
     }
+    else{
+        height = HEIGHT;
+        width = WIDTH;
+    }
+
+    if(width <= 0 || height <= 0){
+        std::cout << "width or height not valid" << std::endl;
+        return 0;
+    }
 
     std::string outputFile = "myppm.ppm";
     //Creates an output stream.
@@ -43,11 +52,7 @@ int main(int argc, char *argv[]){
  
     for(uint32_t y = height-1; y > 0; y--){
         for(uint32_t x = 0; x < width; x++){
-            //Normalizes r g b values.
-            // auto nr = double(x) / (width-1);
-            // auto ng = double(y) / (height-1);
-            // auto nb = 0;
- 
+            //passes x and y pixel position into sin function to calculate the red and green values
             auto r = .5*sin(double(x/50.0))+.5;
             auto g = .5*sin(double(y/50.0))+.5;
             auto b = .25;
