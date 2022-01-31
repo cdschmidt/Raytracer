@@ -26,6 +26,7 @@ class Vector3 {
         Vector3 operator-(const Vector3& rhs);
         Vector3 operator*(const double num);
         Vector3 operator/(const double num);
+        void print() const;
     private:
         double x;
         double y;

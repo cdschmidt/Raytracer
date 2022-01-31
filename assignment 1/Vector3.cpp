@@ -38,9 +38,7 @@ double Vector3::Z() const
 
 double Vector3::dot(Vector3 vec)
 {
-    x *= vec.x;
-    y *= vec.y;
-    z *= vec.z;
+    return x * vec.x + y * vec.y + z * vec.z;
 }
 
 Vector3 Vector3::cross(Vector3 vec)
@@ -101,28 +99,25 @@ double Vector3::length() const
 
 Vector3 Vector3::operator+(const Vector3& rhs)
 {
-    x += rhs.x;
-    y += rhs.y;
-    z += rhs.z;
+    return Vector3(x + rhs.x, y + rhs.y, z + rhs.z);
 }
 
 Vector3 Vector3::operator-(const Vector3& rhs)
 {
-    x -= rhs.x;
-    y -= rhs.y;
-    z -= rhs.z;
+    return Vector3(x - rhs.x, y - rhs.y, z - rhs.z);
 }
 
 Vector3 Vector3::operator*(const double num)
 {
-    x *= num;
-    y *= num;
-    z *= num;
+    return Vector3(x * num, y * num, z * num);
 }
 
 Vector3 Vector3::operator/(const double num)
 {
-    x /= num;
-    y /= num;
-    z /= num;
+    return Vector3(x / num, y / num, z / num);
+}
+
+void Vector3::print() const
+{
+    std::cout << x << ' ' << y << ' ' << z << std::endl;
 }

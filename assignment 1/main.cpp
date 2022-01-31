@@ -3,7 +3,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
-#include "Vector3.h"
+#include "Vector3.cpp"
 
 #define WIDTH 1024
 #define HEIGHT 1024
@@ -66,7 +66,10 @@ int main(int argc, char *argv[]){
             output_stream << ir << ' ' << ig << ' ' << ib << '\n';
         }
     }
- 
+
+    Vector3 test(2,0,0);
+    test.normalize();
+    test.print();
     output_stream.close();
  
     return 0;
