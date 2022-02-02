@@ -3,14 +3,62 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <vector>
 #include "Vector3.cpp"
+#include "Ray.h"
+#include "Sphere.h"
 
-#define WIDTH 1024
-#define HEIGHT 1024
+#define WIDTH 1920
+#define HEIGHT 1080
+#define PI 3.14159265
+
+void OutputColor(std::ofstream& output_stream, const Color& color){
+    int ir = static_cast<int>(255.999 * color.X());
+    int ig = static_cast<int>(255.999 * color.Y());
+    int ib = static_cast<int>(255.999 * color.Z());
+    output_stream << ir << ' ' << ig << ' ' << ib << '\n';
+}
+
+Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
+    for(int i = 0; i < objects.size(); i++){
+        if(objects[i]->hit(r)){
+            return objects[i]->getColor();
+        }
+    }
+    
+    Vector3 unit_direction = r.getDirection().normalized();
+    auto t = 0.5*(unit_direction.Y() + 1.0);
+    return (1.0-t)*Color(1.0, 1.0, 1.0) + t*Color(0.5, 0.7, 1.0);
+}
  
 int main(int argc, char *argv[]){
-    int width = 0;
-    int height = 0;
+    std::vector<Object*> objects;
+    int width = 1920;
+    int height = 1080;
+    double aspectRatio = double(width) / double(height);
+    double focalLength = 1.0;
+    double vfov = 60;
+    Point3 eye = Point3(0,0,0);
+    Vector3 viewdir = Vector3(0,0, -1).normalized();
+    Vector3 updir = Vector3(0,1,0);
+    Color bkgcolor = Color(0,0,1);
+    Color mtlcolor = Color(1,0,0);
+
+    Sphere* sphere1 = new Sphere(Point3(-2,-1, -2), 0.3);
+    objects.push_back(sphere1);
+
+
+
+    double viewportHeight = 2 * tan((vfov/2) * PI / 180.0) * focalLength; //keep
+    double viewportWidth = aspectRatio * viewportHeight; //keep
+    Vector3 horizontal = viewportWidth*cross(viewdir, updir);
+    horizontal.print();
+    Vector3 vertical = viewportHeight*updir;
+    vertical.print();
+    Point3 lowerLeftCorner = eye - horizontal/2 - vertical/2 + viewdir*focalLength;
+
+
+
     std::ifstream inputFile;
     std::string line;
     //If file is passsed into command line argument then opens the file and gets the width and height
@@ -52,22 +100,18 @@ int main(int argc, char *argv[]){
     output_stream << "P3\n" << width << std::endl << height << std::endl << 255 << std::endl;
  
     for(uint32_t y = height-1; y > 0; y--){
+        //std::cerr << "\rScanlines remaining: " << y << ' ' << std::flush;
         for(uint32_t x = 0; x < width; x++){
-            //passes x and y pixel position into sin function to calculate the red and green values
-            auto r = .5*sin(double(x/50.0))+.5;
-            auto g = .5*sin(double(y/50.0))+.5;
-            auto b = .25;
-            //Multiply normalized values by 255.999 to follow ppm format.
-            //Multiply by 255.999 becasue when casting to integer it cuts off the decimal values.
-            int ir = static_cast<int>(255.999 * r);
-            int ig = static_cast<int>(255.999 * g);
-            int ib = static_cast<int>(255.999 * b);
-            //Writes the calculated color to the file.
-            output_stream << ir << ' ' << ig << ' ' << ib << '\n';
+            auto u = double(x) / (width-1);
+            auto v = double(y) / (height-1);
+            Ray r(eye, lowerLeftCorner + u*horizontal + v*vertical - eye);
+            Color pixel = trace_ray(r, objects);
+            OutputColor(output_stream, pixel);
+            
         }
     }
 
-    Vector3 test(2,0,0);
+    Vector3 test(0,0.5,-1);
     test.normalize();
     test.print();
     output_stream.close();

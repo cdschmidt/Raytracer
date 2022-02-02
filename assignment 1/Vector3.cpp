@@ -7,7 +7,7 @@ Vector3::Vector3(){
     z = 0;
 }
 
-Vector3::Vector3(Vector3& vec)
+Vector3::Vector3(const Vector3 &vec)
 {
     x = vec.x;
     y = vec.y;
@@ -107,11 +107,6 @@ Vector3 Vector3::operator-(const Vector3& rhs)
     return Vector3(x - rhs.x, y - rhs.y, z - rhs.z);
 }
 
-Vector3 Vector3::operator*(const double num)
-{
-    return Vector3(x * num, y * num, z * num);
-}
-
 Vector3 Vector3::operator/(const double num)
 {
     return Vector3(x / num, y / num, z / num);
@@ -121,3 +116,4 @@ void Vector3::print() const
 {
     std::cout << x << ' ' << y << ' ' << z << std::endl;
 }
+
