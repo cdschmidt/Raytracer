@@ -15,7 +15,11 @@ class Sphere : public Object{
             auto b = 2.0 * dot(oc, r.getDirection());
             auto c = dot(oc, oc) - radius*radius;
             auto discriminant = b*b - 4*a*c;
-            return (discriminant > 0);
+            if (discriminant < 0) {
+                return false;
+            } else {
+                return (-b - sqrt(discriminant) ) / (2.0*a) > 0;
+            }
         }
         virtual Color getColor() const {return mat;}
     private:
