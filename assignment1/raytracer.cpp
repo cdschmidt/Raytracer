@@ -6,7 +6,7 @@
 #include <vector>
 #include <queue>
 #include <sstream>
-#include "Vector3.cpp"
+#include "Vector3.h"
 #include "Ray.h"
 #include "Sphere.h"
 
@@ -34,16 +34,6 @@ Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
 }
  
 int main(int argc, char *argv[]){
-    // std::vector<Object*> objects;
-    // int width = 1920;
-    // int height = 1080;
-    // double vfov = 60;
-    // Point3 eye = Point3(0,0,0);
-    // Vector3 viewdir = Vector3(-1,0, -1).normalized();
-    // Vector3 updir = Vector3(0,1,0);
-    // Color bkgcolor = Color(0,0,1);
-    // std::queue<Color> mtlcolors;
-
     std::vector<Object*> objects;
     int width;
     int height;
@@ -77,7 +67,6 @@ int main(int argc, char *argv[]){
                 std::stringstream ss(line);
                 std::string word;
                 ss >> word;
-                std::cout << word << std::endl;
                 if(word == "imsize"){
 
                     ss >> width;
@@ -92,10 +81,7 @@ int main(int argc, char *argv[]){
                     ss >> x;
                     ss >> y;
                     ss >> z;
-                    std::cout << x << "aa" << y << "aa" << z << '\n';
                     eye = Point3(std::stod(x),std::stod(y),std::stod(z));
-                    std::cout << "eye point is:";
-                    eye.print();
                 }
                 else if(word == "viewdir"){
                     std::string x;
@@ -178,19 +164,10 @@ int main(int argc, char *argv[]){
         }
         inputFile.close();
     }
-    // else{
-    //     height = HEIGHT;
-    //     width = WIDTH;
-    //     int width = 1920;
-    //     int height = 1080;
-    //     double vfov = 60;
-    //     Point3 eye = Point3(0,0,0);
-    //     Vector3 viewdir = Vector3(-1,0, -1).normalized();
-    //     Vector3 updir = Vector3(0,1,0).normalized();
-    //     Color bkgcolor = Color(0,0,1);
-    //     Sphere* sphere1 = new Sphere(Point3(-2,-1, -2), 0.3);
-    //     objects.push_back(sphere1);
-    // }
+    else{
+        std::cout << "No input file provided" << std::endl;
+        return 0;
+    }
 
     if(width <= 0 || height <= 0){
         std::cout << "width or height not valid" << std::endl;
@@ -206,7 +183,9 @@ int main(int argc, char *argv[]){
     Vector3 vertical = viewportHeight*updir;
     Point3 lowerLeftCorner = eye - horizontal/2 - vertical/2 + viewdir*focalLength;
 
-    std::string outputFile = "myppm.ppm";
+    std::string outputFile = argv[1];
+    outputFile = outputFile.substr(0, outputFile.length()-4);
+    outputFile.append(".ppm");
     //Creates an output stream.
     std::ofstream output_stream(outputFile, std::ios::out | std::ios::binary);
     //Writes header to the file.
@@ -224,9 +203,6 @@ int main(int argc, char *argv[]){
         }
     }
 
-    Vector3 test(0,0.5,-1);
-    test.normalize();
-    test.print();
     output_stream.close();
  
     return 0;
