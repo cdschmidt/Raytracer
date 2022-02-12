@@ -9,16 +9,16 @@ class Sphere : public Object{
     public:
         Sphere(Point3 orig, double r) : origin(orig), radius(r), mat(Color(0,0,0)){}
         Sphere(Point3 orig, double r, Color c) : origin(orig), radius(r), mat(c){}
-        virtual bool hit(const Ray& r) const {
+        virtual double hit(const Ray& r) const {
             Vector3 oc = r.getOrigin() - origin;
             auto a = dot(r.getDirection(), r.getDirection());
             auto b = 2.0 * dot(oc, r.getDirection());
             auto c = dot(oc, oc) - radius*radius;
             auto discriminant = b*b - 4*a*c;
             if (discriminant < 0) {
-                return false;
+                return -1.0;
             } else {
-                return (-b - sqrt(discriminant) ) / (2.0*a) > 0;
+                return (-b - sqrt(discriminant) ) / (2.0*a);
             }
         }
         virtual Color getColor() const {return mat;}

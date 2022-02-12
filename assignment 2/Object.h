@@ -6,8 +6,9 @@
 
 class Object{
     public:
-        virtual bool hit(const Ray& r) const {return false;}
+        virtual double hit(const Ray& r) const {return false;}
         virtual Color getColor() const {return mat;}
+        virtual Point3 getPos() const {return origin;}
     protected:
         Point3 origin;
         Color mat;

@@ -15,6 +15,8 @@
 #define PI 3.14159265
 
 Color bkgcolor;
+double ambientStrength = 0.1;
+Point3 lightdir(1,1,0);
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255.999 * color.X());
@@ -23,10 +25,22 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
     output_stream << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
+Color shade_ray(const Ray& r, const double t, const Object* object){
+
+    Vector3 ambiantLight = ambientStrength * Vector3(1,1,1);
+    Point3 surface = r.at(t);
+    Point3 objectPos = object->getPos();
+    Vector3 normal = (surface - objectPos).normalized();
+    double diff = std::min(std::max(dot(normal, lightdir.normalized()), 0.0), 1.0);
+    Vector3 diffuse = diff * Vector3(1,1,1);
+    return (diffuse + ambiantLight) * object->getColor();
+}
+
 Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
-    for(int i = 0; i < objects.size(); i++){
-        if(objects[i]->hit(r)){
-            return objects[i]->getColor();
+    for(Object* object : objects){
+        double t = object->hit(r);
+        if(t > 0.0){
+            return shade_ray(r, t, object);
         }
     }
     
@@ -175,6 +189,8 @@ int main(int argc, char *argv[]){
     }
 
     //Calculate correct viewport width height and orientaion for the given vfov and viewdir/updir
+    viewdir.normalize();
+    updir.normalize();
     double aspectRatio = double(width) / double(height);
     double focalLength = 1.0;
     double viewportHeight = 2.0 * tan((vfov/2.0) * PI / 180.0) * focalLength; //keep

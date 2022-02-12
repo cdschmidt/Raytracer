@@ -39,6 +39,15 @@ inline Vector3 operator*(double t, const Vector3 &v) {
     return Vector3(t*v.X(), t*v.Y(), t*v.Z());
 }
 
+inline Vector3 operator*(const Vector3 &lhs, const Vector3 &rhs) {
+    return Vector3(lhs.X()*rhs.X(), lhs.Y()*rhs.Y(), lhs.Z()*rhs.Z());
+}
+
+
+inline Vector3 operator+(const Vector3 &lhs, const Vector3 &rhs) {
+    return Vector3(lhs.X()+rhs.X(), lhs.Y()+rhs.Y(), lhs.Z()+rhs.Z());
+}
+
 inline Vector3 operator*(const Vector3 &v, double t) {
     return t * v;
 }
