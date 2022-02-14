@@ -107,6 +107,11 @@ Vector3 Vector3::operator-(const Vector3& rhs)
     return Vector3(x - rhs.x, y - rhs.y, z - rhs.z);
 }
 
+Vector3 Vector3::operator-()
+{
+    return Vector3(-x,-y,-z);
+}
+
 Vector3 Vector3::operator/(const double num)
 {
     return Vector3(x / num, y / num, z / num);

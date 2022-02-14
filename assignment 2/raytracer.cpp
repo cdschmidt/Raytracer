@@ -16,7 +16,7 @@
 
 Color bkgcolor;
 double ambientStrength = 0.1;
-Point3 lightdir(1,1,0);
+Point3 lightPos(5,5,0);
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255.999 * color.X());
@@ -25,22 +25,35 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
     output_stream << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
-Color shade_ray(const Ray& r, const double t, const Object* object){
-
-    Vector3 ambiantLight = ambientStrength * Vector3(1,1,1);
+Color shade_ray(const Ray& r, const double t, const Object* object, const std::vector<Object*>& objects){
     Point3 surface = r.at(t);
+
+    //amibent
+    Vector3 ambiantLight = ambientStrength * object->getColor();
+
+    //diffuse
+    double diffuseK = 1.0;
+    Vector3 lightdir = (lightPos - surface).normalized();
     Point3 objectPos = object->getPos();
     Vector3 normal = (surface - objectPos).normalized();
-    double diff = std::min(std::max(dot(normal, lightdir.normalized()), 0.0), 1.0);
-    Vector3 diffuse = diff * Vector3(1,1,1);
-    return (diffuse + ambiantLight) * object->getColor();
+    double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
+    Vector3 diffuse = diffuseK * diff * object->getColor();
+
+    //specular
+    double specK = 1;
+    // Vector3 reflectDir = -lightdir - 2.0 * dot(normal, -lightdir) * normal;
+    // float spec = std::pow(std::max(dot(-r.getDirection(), reflectDir), 0.0), 32);
+    Vector3 halfwayDir = (lightdir + -r.getDirection()).normalized();
+    float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), 32);
+    Vector3 specular = spec * Color(1,1,1);
+    return (ambiantLight + diffuse + specular);
 }
 
 Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
     for(Object* object : objects){
         double t = object->hit(r);
         if(t > 0.0){
-            return shade_ray(r, t, object);
+            return shade_ray(r, t, object, objects);
         }
     }
     
@@ -56,13 +69,6 @@ int main(int argc, char *argv[]){
     Vector3 viewdir;
     Vector3 updir;
     std::queue<Color> mtlcolors;
-
-    // Sphere* sphere1 = new Sphere(Point3(-2,-1, -2), 0.3);
-    // objects.push_back(sphere1);
-    
-
-    
-
 
 
     std::ifstream inputFile;
@@ -189,14 +195,12 @@ int main(int argc, char *argv[]){
     }
 
     //Calculate correct viewport width height and orientaion for the given vfov and viewdir/updir
-    viewdir.normalize();
-    updir.normalize();
     double aspectRatio = double(width) / double(height);
     double focalLength = 1.0;
-    double viewportHeight = 2.0 * tan((vfov/2.0) * PI / 180.0) * focalLength; //keep
-    double viewportWidth = aspectRatio * viewportHeight; //keep
-    Vector3 horizontal = viewportWidth*cross(viewdir, updir);
-    Vector3 vertical = viewportHeight*updir;
+    double viewportHeight = 2.0 * tan((vfov/2.0) * PI / 180.0) * focalLength;
+    double viewportWidth = aspectRatio * viewportHeight;
+    Vector3 horizontal = viewportWidth*cross(viewdir, updir).normalized();
+    Vector3 vertical = viewportHeight*cross(horizontal.normalized(), viewdir).normalized();
     Point3 lowerLeftCorner = eye - horizontal/2 - vertical/2 + viewdir*focalLength;
 
     std::string outputFile = argv[1];
@@ -212,7 +216,9 @@ int main(int argc, char *argv[]){
         for(uint32_t x = 0; x < width; x++){
             auto u = double(x) / (width-1);
             auto v = double(y) / (height-1);
-            Ray r(eye, lowerLeftCorner + u*horizontal + v*vertical - eye);
+            Vector3 rayDir = lowerLeftCorner + u*horizontal + v*vertical - eye;
+            rayDir.normalize();
+            Ray r(eye, rayDir);
             Color pixel = trace_ray(r, objects);
             OutputColor(output_stream, pixel);
             

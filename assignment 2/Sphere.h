@@ -22,6 +22,7 @@ class Sphere : public Object{
             }
         }
         virtual Color getColor() const {return mat;}
+        virtual Point3 getPos() const {return origin;}
     private:
         Point3 origin;
         double radius;
