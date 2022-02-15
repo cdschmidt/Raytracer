@@ -9,6 +9,7 @@
 #include "Vector3.h"
 #include "Ray.h"
 #include "Sphere.h"
+#include "Material.h"
 
 #define WIDTH 1920
 #define HEIGHT 1080
@@ -29,23 +30,23 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
     Point3 surface = r.at(t);
 
     //amibent
-    Vector3 ambiantLight = ambientStrength * object->getColor();
+    Vector3 ambiantLight = object->getMaterial().ka * object->getMaterial().color;
 
     //diffuse
-    double diffuseK = 1.0;
+    double diffuseK = object->getMaterial().kd;
     Vector3 lightdir = (lightPos - surface).normalized();
     Point3 objectPos = object->getPos();
     Vector3 normal = (surface - objectPos).normalized();
     double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
-    Vector3 diffuse = diffuseK * diff * object->getColor();
+    Vector3 diffuse = diffuseK * diff * object->getMaterial().color;
 
     //specular
-    double specK = .5;
+    double specK = object->getMaterial().ks;
     // Vector3 reflectDir = -lightdir - 2.0 * dot(normal, -lightdir) * normal;
     // float spec = std::pow(std::max(dot(-r.getDirection(), reflectDir), 0.0), 32);
     Vector3 halfwayDir = (lightdir + -r.getDirection()).normalized();
-    float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), 32);
-    Vector3 specular = specK * spec * Color(1,1,1);
+    float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), object->getMaterial().n);
+    Vector3 specular = specK * spec * object->getMaterial().sMat;
     
 
     //shadow
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]){
     Point3 eye;
     Vector3 viewdir;
     Vector3 updir;
-    std::queue<Color> mtlcolors;
+    std::queue<Material> mtlcolors;
 
 
     std::ifstream inputFile;
@@ -158,9 +159,9 @@ int main(int argc, char *argv[]){
 
                     Point3 spherePos = Point3(std::stod(x),std::stod(y),std::stod(z));
                     if(mtlcolors.size() > 0){
-                        Color sphereColor = mtlcolors.front();
+                        Material sphereMat = mtlcolors.front();
                         mtlcolors.pop();
-                        Sphere* sphere = new Sphere(spherePos, std::stod(rad), sphereColor);
+                        Sphere* sphere = new Sphere(spherePos, std::stod(rad), sphereMat);
                         objects.push_back(sphere);
                     }
                     else{
@@ -186,11 +187,33 @@ int main(int argc, char *argv[]){
                     std::string r;
                     std::string g;
                     std::string b;
+                    std::string sr;
+                    std::string sg;
+                    std::string sb;
+                    std::string ka;
+                    std::string kd;
+                    std::string ks;
+                    std::string n;
 
                     ss >> r;
                     ss >> g;
                     ss >> b;
-                    mtlcolors.push(Color(std::stod(r),std::stod(g),std::stod(b)));
+                    ss >> sr;
+                    ss >> sg;
+                    ss >> sb;
+                    ss >> ka;
+                    ss >> kd;
+                    ss >> ks;
+                    ss >> n;
+
+                    Color mat = Color(std::stod(r),std::stod(g),std::stod(b));
+                    Color sMat = Color(std::stod(sr),std::stod(sg),std::stod(sb));
+                    double Ka = std::stod(ka);
+                    double Kd = std::stod(kd);
+                    double Ks = std::stod(ks);
+                    double N = std::stod(n);
+                    Material mtl(mat, sMat, Ka, Kd, Ks, N);
+                    mtlcolors.push(mtl);
                 }
                 else{
                     std::cout << word << " is not a valid keyword" << std::endl;

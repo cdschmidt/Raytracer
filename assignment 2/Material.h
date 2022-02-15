@@ -4,7 +4,16 @@
 #include "Vector3.h"
 
 struct Material {
-    Color mat;
+    Material(Color col, Color spec, double a, double d, double s, double N) : color(col), sMat(spec), ka(a), kd(d), ks(s), n(N) {}
+    Material(const Material &mat) {
+        color = mat.color;
+        sMat = mat.sMat;
+        ka = mat.ka;
+        kd = mat.kd;
+        ks = mat.ks;
+        n = mat.n;
+    }
+    Color color;
     Color sMat;
     double ka;
     double kd;
