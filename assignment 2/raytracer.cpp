@@ -19,9 +19,9 @@ double ambientStrength = 0.1;
 Point3 lightPos(5,5,0);
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
-    int ir = static_cast<int>(255.999 * color.X());
-    int ig = static_cast<int>(255.999 * color.Y());
-    int ib = static_cast<int>(255.999 * color.Z());
+    int ir = static_cast<int>(255 * color.X());
+    int ig = static_cast<int>(255 * color.Y());
+    int ib = static_cast<int>(255 * color.Z());
     output_stream << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
@@ -40,13 +40,30 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
     Vector3 diffuse = diffuseK * diff * object->getColor();
 
     //specular
-    double specK = 1;
+    double specK = .5;
     // Vector3 reflectDir = -lightdir - 2.0 * dot(normal, -lightdir) * normal;
     // float spec = std::pow(std::max(dot(-r.getDirection(), reflectDir), 0.0), 32);
     Vector3 halfwayDir = (lightdir + -r.getDirection()).normalized();
     float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), 32);
-    Vector3 specular = spec * Color(1,1,1);
-    return (ambiantLight + diffuse + specular);
+    Vector3 specular = specK * spec * Color(1,1,1);
+    
+
+    //shadow
+    double shadow = 1;
+    Ray shadowRay(surface, lightdir);
+    for(Object* object : objects){
+        double t = object->hit(shadowRay);
+        Vector3 rayToObject = shadowRay.at(t) - surface;
+        if(t > 0.0 && rayToObject.length() < (lightPos - surface).length()){
+            shadow = 0;
+        }
+    }   
+    //clamp
+    Vector3 lighting = ambiantLight + shadow * (diffuse + specular);
+    lighting.x = std::min(1.0, lighting.x);
+    lighting.y = std::min(1.0, lighting.y);
+    lighting.z = std::min(1.0, lighting.z);
+    return lighting;
 }
 
 Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {

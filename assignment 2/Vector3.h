@@ -27,7 +27,7 @@ class Vector3 {
         Vector3 operator-();
         Vector3 operator/(const double num);
         void print() const;
-    private:
+    public:
         double x;
         double y;
         double z;
