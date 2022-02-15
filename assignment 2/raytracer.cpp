@@ -10,14 +10,15 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "Material.h"
+#include "Lights.h"
 
 #define WIDTH 1920
 #define HEIGHT 1080
 #define PI 3.14159265
 
 Color bkgcolor;
-double ambientStrength = 0.1;
 Point3 lightPos(5,5,0);
+std::vector<Light> sceneLights;
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255 * color.X());
@@ -28,39 +29,51 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
 
 Color shade_ray(const Ray& r, const double t, const Object* object, const std::vector<Object*>& objects){
     Point3 surface = r.at(t);
+    Vector3 lighting(0,0,0);
+    double lightIntensity = .4;
 
     //amibent
     Vector3 ambiantLight = object->getMaterial().ka * object->getMaterial().color;
 
-    //diffuse
-    double diffuseK = object->getMaterial().kd;
-    Vector3 lightdir = (lightPos - surface).normalized();
-    Point3 objectPos = object->getPos();
-    Vector3 normal = (surface - objectPos).normalized();
-    double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
-    Vector3 diffuse = diffuseK * diff * object->getMaterial().color;
-
-    //specular
-    double specK = object->getMaterial().ks;
-    // Vector3 reflectDir = -lightdir - 2.0 * dot(normal, -lightdir) * normal;
-    // float spec = std::pow(std::max(dot(-r.getDirection(), reflectDir), 0.0), 32);
-    Vector3 halfwayDir = (lightdir + -r.getDirection()).normalized();
-    float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), object->getMaterial().n);
-    Vector3 specular = specK * spec * object->getMaterial().sMat;
-    
-
-    //shadow
-    double shadow = 1;
-    Ray shadowRay(surface, lightdir);
-    for(Object* object : objects){
-        double t = object->hit(shadowRay);
-        Vector3 rayToObject = shadowRay.at(t) - surface;
-        if(t > 0.0 && rayToObject.length() < (lightPos - surface).length()){
-            shadow = 0;
+    for(auto light : sceneLights){
+        //diffuse
+        double diffuseK = object->getMaterial().kd;
+        Vector3 lightdir(0,0,0);
+        if(light.type == 0){
+            lightdir = (light.posOrDir - surface).normalized();
         }
-    }   
-    //clamp
-    Vector3 lighting = ambiantLight + shadow * (diffuse + specular);
+        else{
+            lightdir = -light.posOrDir.normalized();
+        }
+        
+        Point3 objectPos = object->getPos();
+        Vector3 normal = (surface - objectPos).normalized();
+        double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
+        Vector3 diffuse = diffuseK * diff * object->getMaterial().color;
+
+        //specular
+        double specK = object->getMaterial().ks;
+        // Vector3 reflectDir = -lightdir - 2.0 * dot(normal, -lightdir) * normal;
+        // float spec = std::pow(std::max(dot(-r.getDirection(), reflectDir), 0.0), 32);
+        Vector3 halfwayDir = (lightdir + -r.getDirection()).normalized();
+        float spec = std::pow(std::max(dot(normal, halfwayDir), 0.0), object->getMaterial().n);
+        Vector3 specular = specK * spec * object->getMaterial().sMat;
+
+
+        //shadow
+        double shadow = 1;
+        Ray shadowRay(surface, lightdir);
+        for(Object* object : objects){
+            double t = object->hit(shadowRay);
+            Vector3 rayToObject = shadowRay.at(t) - surface;
+            if(t > 0.0 && (rayToObject.length() < (light.posOrDir - surface).length() || light.type == 1)){
+                shadow = 0;
+            }
+        }   
+        //clamp
+        lighting = lighting + shadow * lightIntensity * (diffuse + specular);
+    }
+    lighting = lighting + ambiantLight;
     lighting.x = std::min(1.0, lighting.x);
     lighting.y = std::min(1.0, lighting.y);
     lighting.z = std::min(1.0, lighting.z);
@@ -214,6 +227,29 @@ int main(int argc, char *argv[]){
                     double N = std::stod(n);
                     Material mtl(mat, sMat, Ka, Kd, Ks, N);
                     mtlcolors.push(mtl);
+                }
+                else if(word == "light"){
+
+                    std::string x;
+                    std::string y;
+                    std::string z;
+                    std::string w;
+                    std::string r;
+                    std::string g;
+                    std::string b;
+
+                    ss >> x;
+                    ss >> y;
+                    ss >> z;
+                    ss >> w;
+                    ss >> r;
+                    ss >> g;
+                    ss >> b;
+                    Vector3 pos(std::stod(x),std::stod(y),std::stod(z));
+                    int type = std::stoi(w);
+                    Color color = Color(std::stod(r),std::stod(g),std::stod(b));
+                    Light light(pos, type, color);
+                    sceneLights.push_back(light);
                 }
                 else{
                     std::cout << word << " is not a valid keyword" << std::endl;
