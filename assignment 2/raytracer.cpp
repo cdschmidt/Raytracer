@@ -6,6 +6,7 @@
 #include <vector>
 #include <queue>
 #include <sstream>
+#include <limits>
 #include "Vector3.h"
 #include "Ray.h"
 #include "Sphere.h"
@@ -19,6 +20,7 @@
 Color bkgcolor;
 Point3 lightPos(5,5,0);
 std::vector<Light> sceneLights;
+Point3 eye;
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255 * color.X());
@@ -30,7 +32,7 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
 Color shade_ray(const Ray& r, const double t, const Object* object, const std::vector<Object*>& objects){
     Point3 surface = r.at(t);
     Vector3 lighting(0,0,0);
-    double lightIntensity = .4;
+    double lightIntensity = .8;
 
     //amibent
     Vector3 ambiantLight = object->getMaterial().ka * object->getMaterial().color;
@@ -39,7 +41,7 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
         //diffuse
         double diffuseK = object->getMaterial().kd;
         Vector3 lightdir(0,0,0);
-        if(light.type == 0){
+        if(light.type == 1){
             lightdir = (light.posOrDir - surface).normalized();
         }
         else{
@@ -81,11 +83,18 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
 }
 
 Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
+    double minT = std::numeric_limits<double>::max();
+    Object* closestObj;
     for(Object* object : objects){
         double t = object->hit(r);
-        if(t > 0.0){
-            return shade_ray(r, t, object, objects);
+        if(t > 0.0 && t < minT){
+            minT = t;
+            closestObj = object;
         }
+    }
+
+    if(minT < std::numeric_limits<double>::max()){
+        return shade_ray(r, minT, closestObj, objects);
     }
     
     return bkgcolor;
@@ -96,7 +105,7 @@ int main(int argc, char *argv[]){
     int width;
     int height;
     double vfov;
-    Point3 eye;
+
     Vector3 viewdir;
     Vector3 updir;
     std::queue<Material> mtlcolors;
