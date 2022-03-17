@@ -142,6 +142,27 @@ int main(int argc, char *argv[]){
                     ss >> width;
                     ss >> height;
                 }
+                else if(word == "f"){
+                    line = line.substr(2, line.length()-2);
+                    const char* w = line.c_str();
+                    unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+
+                    if (sscanf(w, "%d/%d/%d %d/%d/%d %d/%d/%d", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]) == 9){
+                        std::cout << "First One Works\n";
+                    }
+                    else if (sscanf(w, "%d//%d %d//%d %d//%d", &vertexIndex[0], &normalIndex[0], &vertexIndex[1], &normalIndex[1], &vertexIndex[2], &normalIndex[2]) == 6){
+                        std::cout << "Second One Works\n";
+                    }
+                    else if (sscanf(w, "%d/%d %d/%d %d/%d", &vertexIndex[0], &uvIndex[0], &vertexIndex[1], &uvIndex[1], &vertexIndex[2], &uvIndex[2]) == 6){
+                        std::cout << "Third One Works\n";
+                    }
+                    else if (sscanf(w, "%d %d %d", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]) == 3){
+                        std::cout << "Fourth One Works\n";
+                    }
+                    else{
+                        std::cout << "face format incorrect\n";
+                    }
+                }
                 else if(word == "eye"){
 
                     std::string x;
