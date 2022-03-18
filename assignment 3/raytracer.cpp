@@ -50,7 +50,7 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
         }
         
 
-        Vector3 normal = object->getNormal(t, r);
+        Vector3 normal = object->getNormal(t, r).normalized();
         double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
         Vector3 diffuse = diffuseK * diff * object->getMaterial().color;
 
@@ -73,12 +73,12 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
                 shadow = 0;
             }
         }   
-        //clamp
+        
         lighting = lighting + shadow * lightIntensity * (diffuse + specular);
         //lighting = lighting + lightIntensity * (diffuse + specular);
     }
     lighting = lighting + ambiantLight;
-
+    //clamp
     lighting.x = std::min(1.0, lighting.x);
     lighting.y = std::min(1.0, lighting.y);
     lighting.z = std::min(1.0, lighting.z);
@@ -102,6 +102,10 @@ Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
     
     return bkgcolor;
 }
+
+std::vector<Point3> vertexArr;
+std::vector<Point3> textureUVArr;
+std::vector<Vector3> normalArr;
  
 int main(int argc, char *argv[]){
     std::vector<Object*> objects;
@@ -111,15 +115,8 @@ int main(int argc, char *argv[]){
 
     Vector3 viewdir;
     Vector3 updir;
-    std::queue<Material> mtlcolors;
-
-
-    Point3 Vert0 = Point3(-1, 0, -10);
-    Point3 Vert1 = Point3(1, 0, -10);
-    Point3 Vert2 = Point3(0, 1, -10);
-    Triangle* tri = new Triangle(Vert0, Vert1, Vert2);
-    objects.push_back(tri);
-
+    Material* mtlInstance;
+    mtlInstance = NULL;
 
     std::ifstream inputFile;
     std::string line;
@@ -157,14 +154,57 @@ int main(int argc, char *argv[]){
                         std::cout << "Third One Works\n";
                     }
                     else if (sscanf(w, "%d %d %d", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]) == 3){
-                        std::cout << "Fourth One Works\n";
+                        Point3 v0 = vertexArr[vertexIndex[0]-1];
+                        Point3 v1 = vertexArr[vertexIndex[1]-1];
+                        Point3 v2 = vertexArr[vertexIndex[2]-1];
+
+                        if(mtlInstance){
+                            Triangle* tri = new Triangle(v0, v1, v2, *mtlInstance);
+                            objects.push_back(tri);
+                        }
+                        else {
+                            Triangle* tri = new Triangle(v0, v1, v2);
+                            objects.push_back(tri);
+                        }
                     }
                     else{
                         std::cout << "face format incorrect\n";
                     }
                 }
-                else if(word == "eye"){
+                else if(word == "v"){
+                    std::string x;
+                    std::string y;
+                    std::string z;
 
+                    ss >> x;
+                    ss >> y;
+                    ss >> z;
+                    Point3 vertex(std::stod(x),std::stod(y),std::stod(z));
+                    vertexArr.push_back(vertex);
+                }
+                else if(word == "vn"){
+                    std::string x;
+                    std::string y;
+                    std::string z;
+
+                    ss >> x;
+                    ss >> y;
+                    ss >> z;
+                    Vector3 noraml(std::stod(x),std::stod(y),std::stod(z));
+                    normalArr.push_back(noraml);
+                }
+                else if(word == "vt"){
+                    std::string x;
+                    std::string y;
+                    std::string z;
+
+                    ss >> x;
+                    ss >> y;
+                    ss >> z;
+                    Point3 textureUV(std::stod(x),std::stod(y),std::stod(z));
+                    textureUVArr.push_back(textureUV);
+                }
+                else if(word == "eye"){
                     std::string x;
                     std::string y;
                     std::string z;
@@ -211,10 +251,8 @@ int main(int argc, char *argv[]){
                     ss >> rad;
 
                     Point3 spherePos = Point3(std::stod(x),std::stod(y),std::stod(z));
-                    if(mtlcolors.size() > 0){
-                        Material sphereMat = mtlcolors.front();
-                        mtlcolors.pop();
-                        Sphere* sphere = new Sphere(spherePos, std::stod(rad), sphereMat);
+                    if(mtlInstance){
+                        Sphere* sphere = new Sphere(spherePos, std::stod(rad), *mtlInstance);
                         objects.push_back(sphere);
                     }
                     else{
@@ -265,8 +303,7 @@ int main(int argc, char *argv[]){
                     double Kd = std::stod(kd);
                     double Ks = std::stod(ks);
                     double N = std::stod(n);
-                    Material mtl(mat, sMat, Ka, Kd, Ks, N);
-                    mtlcolors.push(mtl);
+                    mtlInstance = new Material(mat, sMat, Ka, Kd, Ks, N);
                 }
                 else if(word == "light"){
 

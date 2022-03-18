@@ -65,15 +65,21 @@ class Triangle : public Object{
         }
         virtual Material getMaterial() const {return mat;}
         virtual Point3 getNormal(double t, const Ray& r) const {
-            Vector3 v0v1 = v1 - v0; 
-            Vector3 v0v2 = v2 - v0; 
-            Vector3 N = cross(v0v1, v0v2);
-            return N;
+            if(normals.length() == 0){
+                Vector3 v0v1 = v1 - v0; 
+                Vector3 v0v2 = v2 - v0; 
+                Vector3 N = cross(v0v1, v0v2);
+                return N;
+            }
+
+            return Point3(0,0,0);
+            
         }
     private:
         Point3 v0;
         Point3 v1;
         Point3 v2;
+        Vector3 normals;
         Material mat;
 };
 
