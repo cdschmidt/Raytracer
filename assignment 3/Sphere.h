@@ -25,7 +25,7 @@ class Sphere : public Object{
                 Vector3 norm = (p - origin).normalized();
 
                 double u = 0.5 + atan2(norm.x, norm.z) / (2*PI);
-                double v = 0.5 - asin(norm.y) / PI;
+                double v = 0.5 - asin(-norm.y) / PI;
 
                 return Hit(p,t,u,v);
             }

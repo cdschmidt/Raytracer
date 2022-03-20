@@ -29,37 +29,6 @@ Point3 eye;
 
 std::vector<std::vector<Color>> image;
 
-// void ImageLoader(std::string filename) {
-//     image.clear();
-//     int max_color;
-//     int width, height;
-//     std::ifstream infile; // image variable used to read from a file
-//     infile.open(filename); // open the file, and associate image with it
-//     if(infile.fail()){ // true if filename doesn't exist
-//         throw "File failed to open";
-//     }
-//     std::string magic_num;
-//     infile >> magic_num >> width >> height >> max_color;
-
-//     image.resize(height);
-//     for (int i = 0; i < height; i++){
-//         image[i].resize(width);
-//     }
-//     for (int y = 0; y < height; y++) {
-//         for (int x = 0; x < width; x++) {
-//             unsigned int red, green, blue;
-//             infile >> red >> green >> blue;
-//             if (!infile) {
-//                 std::cerr << "Error reading from file around (" << y << "," << x << ")" << std::endl;
-//                 return;
-//             }
-//             //std::cout << red << green << blue << std::endl;
-//             image[y][x] = Color(red, green, blue);
-//         }
-//     }
-
-// }
-
 void ImageLoader(std::string filename) {
     image.clear();
     int max_color;
@@ -72,9 +41,9 @@ void ImageLoader(std::string filename) {
     std::string magic_num;
     infile >> magic_num >> width >> height >> max_color;
 
-    image.resize(width);
-    for (int i = 0; i < width; i++){
-        image[i].resize(height);
+    image.resize(height);
+    for (int i = 0; i < height; i++){
+        image[i].resize(width);
     }
     for (int y = height-1; y >= 0; y--) {
         for (int x = 0; x < width; x++) {
@@ -85,11 +54,12 @@ void ImageLoader(std::string filename) {
                 return;
             }
             //std::cout << red << green << blue << std::endl;
-            image[x][y] = Color(red, green, blue);
+            image[y][x] = Color(red, green, blue);
         }
     }
 
 }
+
 
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255 * color.X());

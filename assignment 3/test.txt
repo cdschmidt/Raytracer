@@ -8,9 +8,9 @@ bkgcolor 0 0 0
 light 0 0 -1 0 1.0 1.0 1.0
 light 0 0 1 0 1.0 1.0 1.0
 
-light 2 -5 -5 1 1.0 1.0 1.0
+light -2 15 -2 1 1.0 1.0 1.0
 
-mtlcolor 1 1 1 1 1 1 0.1 .6 0.8 20
+mtlcolor 1 1 1 1 1 1 0.1 .5 0.0 20
 
 texture spot_texture.ppm
 
