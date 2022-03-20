@@ -13,6 +13,9 @@
 #include "Triangle.h"
 #include "Material.h"
 #include "Lights.h"
+#include "Hit.h"
+#include "UV.h"
+
 
 #define WIDTH 1920
 #define HEIGHT 1080
@@ -23,6 +26,71 @@ Point3 lightPos(5,5,0);
 std::vector<Light> sceneLights;
 Point3 eye;
 
+
+std::vector<std::vector<Color>> image;
+
+// void ImageLoader(std::string filename) {
+//     image.clear();
+//     int max_color;
+//     int width, height;
+//     std::ifstream infile; // image variable used to read from a file
+//     infile.open(filename); // open the file, and associate image with it
+//     if(infile.fail()){ // true if filename doesn't exist
+//         throw "File failed to open";
+//     }
+//     std::string magic_num;
+//     infile >> magic_num >> width >> height >> max_color;
+
+//     image.resize(height);
+//     for (int i = 0; i < height; i++){
+//         image[i].resize(width);
+//     }
+//     for (int y = 0; y < height; y++) {
+//         for (int x = 0; x < width; x++) {
+//             unsigned int red, green, blue;
+//             infile >> red >> green >> blue;
+//             if (!infile) {
+//                 std::cerr << "Error reading from file around (" << y << "," << x << ")" << std::endl;
+//                 return;
+//             }
+//             //std::cout << red << green << blue << std::endl;
+//             image[y][x] = Color(red, green, blue);
+//         }
+//     }
+
+// }
+
+void ImageLoader(std::string filename) {
+    image.clear();
+    int max_color;
+    int width, height;
+    std::ifstream infile; // image variable used to read from a file
+    infile.open(filename); // open the file, and associate image with it
+    if(infile.fail()){ // true if filename doesn't exist
+        throw "File failed to open";
+    }
+    std::string magic_num;
+    infile >> magic_num >> width >> height >> max_color;
+
+    image.resize(width);
+    for (int i = 0; i < width; i++){
+        image[i].resize(height);
+    }
+    for (int y = height-1; y >= 0; y--) {
+        for (int x = 0; x < width; x++) {
+            unsigned int red, green, blue;
+            infile >> red >> green >> blue;
+            if (!infile) {
+                std::cerr << "Error reading from file around (" << y << "," << x << ")" << std::endl;
+                return;
+            }
+            //std::cout << red << green << blue << std::endl;
+            image[x][y] = Color(red, green, blue);
+        }
+    }
+
+}
+
 void OutputColor(std::ofstream& output_stream, const Color& color){
     int ir = static_cast<int>(255 * color.X());
     int ig = static_cast<int>(255 * color.Y());
@@ -30,13 +98,32 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
     output_stream << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
-Color shade_ray(const Ray& r, const double t, const Object* object, const std::vector<Object*>& objects){
-    Point3 surface = r.at(t);
+Color shade_ray(const Ray& r, const Hit hit, const Object* object, const std::vector<Object*>& objects){
+    Point3 surface = hit.p;
+    double t = hit.t;
     Vector3 lighting(0,0,0);
     double lightIntensity = .8;
 
     //amibent
-    Vector3 ambiantLight = object->getMaterial().ka * object->getMaterial().color;
+    Color color(0,0,0);
+    double u = hit.u;
+    double v = hit.v;
+    if(image.size() > 0){
+        int i = static_cast<int>(round(u * (image[0].size()-1)));
+        int j = static_cast<int>(round(v * (image.size()-1)));
+        auto red = image[j][i].x;
+        auto green = image[j][i].y;
+        auto blue = image[j][i].z;
+        red /= 255;
+        green /= 255;
+        blue /= 255;
+        color = Color(red,green,blue);
+    }
+    else{
+        color = object->getMaterial().color;
+    }
+
+    Vector3 ambiantLight = object->getMaterial().ka * color;
 
     for(auto light : sceneLights){
         //diffuse
@@ -52,7 +139,7 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
 
         Vector3 normal = object->getNormal(t, r).normalized();
         double diff = std::min(std::max(dot(normal, lightdir), 0.0), 1.0);
-        Vector3 diffuse = diffuseK * diff * object->getMaterial().color;
+        Vector3 diffuse = diffuseK * diff * color;
 
         //specular
         double specK = object->getMaterial().ks;
@@ -67,9 +154,9 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
         double shadow = 1;
         Ray shadowRay(surface, lightdir);
         for(Object* object : objects){
-            double t = object->hit(shadowRay);
-            Vector3 rayToObject = shadowRay.at(t) - surface;
-            if(t > 0.000001 && (rayToObject.length() < (light.posOrDir - surface).length() || light.type == 1)){
+            Hit hit = object->hit(shadowRay);
+            Vector3 rayToObject = hit.p - surface;
+            if(hit.t > 2 && (rayToObject.length() < (light.posOrDir - surface).length() || light.type == 1)){
                 shadow = 0;
             }
         }   
@@ -88,23 +175,25 @@ Color shade_ray(const Ray& r, const double t, const Object* object, const std::v
 Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
     double minT = std::numeric_limits<double>::max();
     Object* closestObj;
+    Hit minHit(Point3(0,0,0));
     for(Object* object : objects){
-        double t = object->hit(r);
-        if(t > 0.0 && t < minT){
-            minT = t;
+        Hit hit = object->hit(r);
+        if(hit.t > 0.0 && hit.t < minT){
+            minT = hit.t;
+            minHit = hit;
             closestObj = object;
         }
     }
 
     if(minT < std::numeric_limits<double>::max()){
-        return shade_ray(r, minT, closestObj, objects);
+        return shade_ray(r, minHit, closestObj, objects);
     }
     
     return bkgcolor;
 }
 
 std::vector<Point3> vertexArr;
-std::vector<Point3> textureUVArr;
+std::vector<UV> textureUVArr;
 std::vector<Vector3> normalArr;
  
 int main(int argc, char *argv[]){
@@ -145,13 +234,62 @@ int main(int argc, char *argv[]){
                     unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
 
                     if (sscanf(w, "%d/%d/%d %d/%d/%d %d/%d/%d", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]) == 9){
-                        std::cout << "First One Works\n";
+                        Point3 v0 = vertexArr[vertexIndex[0]-1];
+                        Point3 v1 = vertexArr[vertexIndex[1]-1];
+                        Point3 v2 = vertexArr[vertexIndex[2]-1];
+
+                        UV uv0 = textureUVArr[uvIndex[0]-1];
+                        UV uv1 = textureUVArr[uvIndex[1]-1];
+                        UV uv2 = textureUVArr[uvIndex[2]-1];
+
+                        Vector3 n0 = normalArr[normalIndex[0]-1];
+                        Vector3 n1 = normalArr[normalIndex[1]-1];
+                        Vector3 n2 = normalArr[normalIndex[2]-1];
+
+                        if(mtlInstance){
+                            Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, n0, n0, n0, *mtlInstance);
+                            objects.push_back(tri);
+                        }
+                        else {
+                            Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, n0, n0, n0);
+                            objects.push_back(tri);
+                        }
                     }
                     else if (sscanf(w, "%d//%d %d//%d %d//%d", &vertexIndex[0], &normalIndex[0], &vertexIndex[1], &normalIndex[1], &vertexIndex[2], &normalIndex[2]) == 6){
-                        std::cout << "Second One Works\n";
+                        Point3 v0 = vertexArr[vertexIndex[0]-1];
+                        Point3 v1 = vertexArr[vertexIndex[1]-1];
+                        Point3 v2 = vertexArr[vertexIndex[2]-1];
+
+                        Vector3 n0 = normalArr[normalIndex[0]-1];
+                        Vector3 n1 = normalArr[normalIndex[1]-1];
+                        Vector3 n2 = normalArr[normalIndex[2]-1];
+
+                        if(mtlInstance){
+                            Triangle* tri = new Triangle(v0, v1, v2, n0, n0, n0, *mtlInstance);
+                            objects.push_back(tri);
+                        }
+                        else {
+                            Triangle* tri = new Triangle(v0, v1, v2, n0, n0, n0);
+                            objects.push_back(tri);
+                        }
                     }
                     else if (sscanf(w, "%d/%d %d/%d %d/%d", &vertexIndex[0], &uvIndex[0], &vertexIndex[1], &uvIndex[1], &vertexIndex[2], &uvIndex[2]) == 6){
-                        std::cout << "Third One Works\n";
+                        Point3 v0 = vertexArr[vertexIndex[0]-1];
+                        Point3 v1 = vertexArr[vertexIndex[1]-1];
+                        Point3 v2 = vertexArr[vertexIndex[2]-1];
+
+                        UV uv0 = textureUVArr[uvIndex[0]-1];
+                        UV uv1 = textureUVArr[uvIndex[1]-1];
+                        UV uv2 = textureUVArr[uvIndex[2]-1];
+
+                        if(mtlInstance){
+                            Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, *mtlInstance);
+                            objects.push_back(tri);
+                        }
+                        else {
+                            Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2);
+                            objects.push_back(tri);
+                        }
                     }
                     else if (sscanf(w, "%d %d %d", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]) == 3){
                         Point3 v0 = vertexArr[vertexIndex[0]-1];
@@ -196,13 +334,16 @@ int main(int argc, char *argv[]){
                 else if(word == "vt"){
                     std::string x;
                     std::string y;
-                    std::string z;
 
                     ss >> x;
                     ss >> y;
-                    ss >> z;
-                    Point3 textureUV(std::stod(x),std::stod(y),std::stod(z));
+                    UV textureUV(std::stod(x),std::stod(y));
                     textureUVArr.push_back(textureUV);
+                }
+                else if(word == "texture"){
+                    std::string imgName;
+                    ss >> imgName;
+                    ImageLoader(imgName);
                 }
                 else if(word == "eye"){
                     std::string x;
@@ -328,6 +469,9 @@ int main(int argc, char *argv[]){
                     Light light(pos, type, color);
                     sceneLights.push_back(light);
                 }
+                else if(word[0] == '#'){
+                    continue;
+                }
                 else{
                     std::cout << word << " is not a valid keyword" << std::endl;
                     return 0;
@@ -365,7 +509,7 @@ int main(int argc, char *argv[]){
     output_stream << "P3\n" << width << std::endl << height << std::endl << 255 << std::endl;
  
     for(uint32_t y = height-1; y > 0; y--){
-        //std::cerr << "\rScanlines remaining: " << y << ' ' << std::flush;
+        std::cerr << "\rScanlines remaining: " << y << ' ' << std::flush;
         for(uint32_t x = 0; x < width; x++){
             auto u = double(x) / (width-1);
             auto v = double(y) / (height-1);
