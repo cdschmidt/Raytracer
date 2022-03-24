@@ -7,6 +7,8 @@
 #include <queue>
 #include <sstream>
 #include <limits>
+#include <thread>
+#include <future>
 #include "Vector3.h"
 #include "Ray.h"
 #include "Sphere.h"
@@ -477,7 +479,9 @@ int main(int argc, char *argv[]){
     std::ofstream output_stream(outputFile, std::ios::out | std::ios::binary);
     //Writes header to the file.
     output_stream << "P3\n" << width << std::endl << height << std::endl << 255 << std::endl;
- 
+    
+    std::vector<std::future<Color>> tasks;
+
     for(uint32_t y = height-1; y > 0; y--){
         std::cerr << "\rScanlines remaining: " << y << ' ' << std::flush;
         for(uint32_t x = 0; x < width; x++){
@@ -486,10 +490,16 @@ int main(int argc, char *argv[]){
             Vector3 rayDir = lowerLeftCorner + u*horizontal + v*vertical - eye;
             rayDir.normalize();
             Ray r(eye, rayDir);
-            Color pixel = trace_ray(r, objects);
-            OutputColor(output_stream, pixel);
+            tasks.push_back(std::async(trace_ray, r, objects));
+            //Color pixel = trace_ray(r, objects);
+            //OutputColor(output_stream, pixel);
             
         }
+    }
+    int count = width * height;
+    for (auto &t : tasks){
+        std::cerr << "\rScanlines remaining: " << count-- << ' ' << std::flush;
+        OutputColor(output_stream, t.get());
     }
 
     output_stream.close();

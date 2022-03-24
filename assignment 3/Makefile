@@ -1,5 +1,5 @@
 raytracer: raytracer.o Vector3.o
-	g++ raytracer.o Vector3.o -o raytracer
+	g++ raytracer.o Vector3.o -o raytracer -lpthread
 
 raytracer.o: raytracer.cpp
 	g++ -c raytracer.cpp
