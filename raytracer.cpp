@@ -180,6 +180,7 @@ int main(int argc, char *argv[]){
     std::ifstream inputFile;
     std::string line;
     //If file is passsed into command line argument then opens the file and gets the width and height
+    int lineCount = 0;
     if(argc > 1){
         std::string inputFileName = argv[1];
         std::ifstream inputFile;
@@ -187,7 +188,8 @@ int main(int argc, char *argv[]){
         if(inputFile.is_open()){
             std::string line;
             while(std::getline(inputFile, line)){
-                if(line == ""){
+                lineCount++;
+                if(line == "" || line == " "){
                     continue;
                 }
                 std::stringstream ss(line);
@@ -439,11 +441,11 @@ int main(int argc, char *argv[]){
                     Light light(pos, type, color);
                     sceneLights.push_back(light);
                 }
-                else if(word[0] == '#'){
+                else if(word[0] == '#' || word[0] == 0){
                     continue;
                 }
                 else{
-                    std::cout << word << " is not a valid keyword" << std::endl;
+                    std::cout << word << " is not a valid keyword on line: " << lineCount << std::endl;
                     return 0;
                 }
             }

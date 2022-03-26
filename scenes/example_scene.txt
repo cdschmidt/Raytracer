@@ -1,0 +1,27 @@
+#camera position
+eye 0.0 0.0 -2.0
+
+#camera view direction
+viewdir 0.0 0.0 1.0
+
+#camera up direction
+updir 0 1 0
+
+#camera vertical field of view
+vfov 60
+
+#Image width and height in pixels
+imsize 1024 1024
+
+#Default background color
+bkgcolor 0 0 0
+
+#types of light are point or directional marked with 0 or 1
+#      x   y   z type r   g   b
+light 5.0 5.0 6.0 1 1.0 1.0 1.0
+
+#         r   g    b   sr  sg  sb  ka  kd  ks  n
+mtlcolor 0.5 0.5 0.13 1.0 1.0 1.0 0.1 1.0 0.5 32
+
+#       x   y   z  radius
+sphere 0.0 0.0 10.0 2.0

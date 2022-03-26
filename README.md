@@ -15,3 +15,15 @@ with a correctly formated .txt file that describes the scene:
 
 The time to render the scene will depend on the complexity of the scene, but once finished the 
 program will output a .ppm file with the same name as the input scene text file.
+
+Sample Scenes
+---------------------
+Some sample scenes are shown below:
+
+This scene was created using the example_scene.txt file found in the scenes directory.
+
+![Alt text](images/example_scene.ppm?raw=true "example_scene")
+
+This scene was created using the cow.txt scene found in the scenes directory.
+
+![Alt text](images/cow.ppm?raw=true "cow")
