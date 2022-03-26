@@ -22,8 +22,8 @@ Some sample scenes are shown below:
 
 This scene was created using the example_scene.txt file found in the scenes directory.
 
-![Alt text](images/example_scene.ppm?raw=true "example_scene")
+![Alt text](images/example_scene.jpg?raw=true "example_scene")
 
 This scene was created using the cow.txt scene found in the scenes directory.
 
-![Alt text](images/cow.ppm?raw=true "cow")
+![Alt text](images/cow.jpg?raw=true "cow")
