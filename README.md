@@ -22,8 +22,8 @@ Some sample scenes are shown below:
 
 This scene was created using the example_scene.txt file found in the scenes directory.
 
-![Alt text](images/example_scene.jpg?raw=true "example_scene")
+<img src="images/example_scene.jpg" width="512" height="512" />
 
 This scene was created using the cow.txt scene found in the scenes directory.
 
-![Alt text](images/cow.jpg?raw=true "cow")
+<img src="images/cow.jpg" width="512" height="512" />
