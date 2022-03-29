@@ -9,7 +9,7 @@
 #define PI 3.14159265
 class Sphere : public Object{
     public:
-        Sphere(Point3 orig, double r) : origin(orig), radius(r), mat(Material(Color(0,0,0), Color(1,1,1), 0.1, 1.0, 1.0, 32.0)){}
+        Sphere(Point3 orig, double r) : origin(orig), radius(r), mat(Material()){}
         Sphere(Point3 orig, double r, Material c) : origin(orig), radius(r), mat(c){}
         virtual Hit hit(const Ray& r) const {
             Vector3 oc = r.getOrigin() - origin;
@@ -36,10 +36,18 @@ class Sphere : public Object{
             Vector3 N = surface - origin;
             return N;
         }
+        virtual bool HasTex() const {
+            return hasTex;
+        }
+
+        void setTex(bool tex) {
+            hasTex = tex;
+        }
     private:
         Point3 origin;
         double radius;
         Material mat;
+        bool hasTex;
 };
 
 

@@ -11,13 +11,13 @@
 constexpr float kEpsilon = 1e-8;
 class Triangle : public Object{
     public:
-        Triangle(Point3 vert0, Point3 vert1, Point3 vert2) : v0(vert0), v1(vert1), v2(vert2), mat(Material(Color(1,1,1), Color(1,1,1), 0.2, 1.0, 1.0, 32.0)), isSmoothShaded(false) {}
+        Triangle(Point3 vert0, Point3 vert1, Point3 vert2) : v0(vert0), v1(vert1), v2(vert2), mat(Material()), isSmoothShaded(false) {}
         Triangle(Point3 vert0, Point3 vert1, Point3 vert2, Material c) : v0(vert0), v1(vert1), v2(vert2), mat(c), isSmoothShaded(false) {}
-        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), mat(Material(Color(1,1,1), Color(1,1,1), 0.2, 1.0, 1.0, 32.0)), isSmoothShaded(false) {}
+        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), mat(Material()), isSmoothShaded(false) {}
         Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2, Material c) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), mat(c), isSmoothShaded(false) {}
-        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, Vector3 nv0, Vector3 n1, Vector3 n2) : v0(vert0), v1(vert1), v2(vert2), nv0(nv0), nv1(n1), nv2(n2), mat(Material(Color(1,1,1), Color(1,1,1), 0.2, 1.0, 1.0, 32.0)), isSmoothShaded(true) {}
+        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, Vector3 nv0, Vector3 n1, Vector3 n2) : v0(vert0), v1(vert1), v2(vert2), nv0(nv0), nv1(n1), nv2(n2), mat(Material()), isSmoothShaded(true) {}
         Triangle(Point3 vert0, Point3 vert1, Point3 vert2, Vector3 n0, Vector3 n1, Vector3 n2, Material c) : v0(vert0), v1(vert1), v2(vert2), nv0(n0), nv1(n1), nv2(n2), mat(c), isSmoothShaded(true) {}
-        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2, Vector3 n0, Vector3 n1, Vector3 n2) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), nv0(n0), nv1(n1), nv2(n2), mat(Material(Color(1,1,1), Color(1,1,1), 0.2, 1.0, 1.0, 32.0)), isSmoothShaded(true) {}
+        Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2, Vector3 n0, Vector3 n1, Vector3 n2) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), nv0(n0), nv1(n1), nv2(n2), mat(Material()), isSmoothShaded(true) {}
         Triangle(Point3 vert0, Point3 vert1, Point3 vert2, UV uv0, UV uv1, UV uv2, Vector3 n0, Vector3 n1, Vector3 n2, Material c) : v0(vert0), v1(vert1), v2(vert2), uv0(uv0), uv1(uv1), uv2(uv2), nv0(n0), nv1(n1), nv2(n2), mat(c), isSmoothShaded(true) {}
         
         
@@ -129,6 +129,12 @@ class Triangle : public Object{
             Vector3 norm = (a*nv0+b*nv1+y*nv2).normalized();
             return norm;
         }
+        virtual bool HasTex() const {
+            return hasTex;
+        }
+        void setTex(bool tex) {
+            hasTex = tex;
+        }
     private:
         Point3 v0;
         Point3 v1;
@@ -145,6 +151,7 @@ class Triangle : public Object{
         Material mat;
 
         bool isSmoothShaded;
+        bool hasTex;
 };
 
 

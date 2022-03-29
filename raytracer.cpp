@@ -21,6 +21,9 @@
 #define HEIGHT 1080
 #define PI 3.14159265
 
+
+Color trace_ray(const Ray& r, const std::vector<Object*>& objects, int depth);
+
 Color bkgcolor;
 Point3 lightPos(5,5,0);
 std::vector<Light> sceneLights;
@@ -28,6 +31,7 @@ Point3 eye;
 
 
 std::vector<std::vector<Color>> image;
+bool texLoaded = false;
 
 void ImageLoader(std::string filename) {
     image.clear();
@@ -57,6 +61,7 @@ void ImageLoader(std::string filename) {
             image[y][x] = Color(red, green, blue);
         }
     }
+    texLoaded = true;
 
 }
 
@@ -68,17 +73,17 @@ void OutputColor(std::ofstream& output_stream, const Color& color){
     output_stream << ir << ' ' << ig << ' ' << ib << '\n';
 }
 
-Color shade_ray(const Ray& r, const Hit hit, const Object* object, const std::vector<Object*>& objects){
+Color shade_ray(const Ray& r, const Hit hit, const Object* object, const std::vector<Object*>& objects, int depth){
     Point3 surface = hit.p;
     double t = hit.t;
     Vector3 lighting(0,0,0);
-    double lightIntensity = .8;
+    double lightIntensity = 1;
 
     //amibent
     Color color(0,0,0);
     double u = hit.u;
     double v = hit.v;
-    if(image.size() > 0){
+    if(object->HasTex()){
         int i = static_cast<int>(round(u * (image[0].size()-1)));
         int j = static_cast<int>(round(v * (image.size()-1)));
         auto red = image[j][i].x;
@@ -127,14 +132,31 @@ Color shade_ray(const Ray& r, const Hit hit, const Object* object, const std::ve
             Hit hit = object->hit(shadowRay);
             Vector3 rayToObject = hit.p - surface;
             if(hit.t > 2 && (rayToObject.length() < (light.posOrDir - surface).length() || light.type == 1)){
-                shadow = 0;
+                shadow = shadow * (1-object->getMaterial().opacity);
             }
         }   
-        
         lighting = lighting + shadow * lightIntensity * (diffuse + specular);
         //lighting = lighting + lightIntensity * (diffuse + specular);
     }
-    lighting = lighting + ambiantLight;
+    double ir = object->getMaterial().nt;
+    double refraction_ratio = r.InObject() ? ir : (1.0/ir);
+    auto cos_theta = fmin(dot(-r.getDirection(), object->getNormal(t,r)), 1.0);
+    double sin_theta = sqrt(1.0 - cos_theta*cos_theta);
+
+    bool cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+    double f0 = pow((object->getMaterial().nt - 1.0) / (object->getMaterial().nt + 1.0), 2);
+    
+    double fresnel = f0 + (1-f0) * (pow(1-sin(cos_theta),3));
+
+    Vector3 reflected = reflect(r.getDirection().normalized(), object->getNormal(t, r).normalized()).normalized();
+    Vector3 refracted = refract(-r.getDirection().normalized(), object->getNormal(t, r), refraction_ratio).normalized();
+
+    Ray reflectRay(surface, reflected);
+    Ray refractedRay(surface+refracted*.001, refracted, !r.InObject());
+    lighting = lighting + ambiantLight + fresnel * trace_ray(reflectRay, objects, depth-1) + (1-fresnel) * (1-object->getMaterial().opacity) * trace_ray(refractedRay, objects, depth-1);
+
+    
     //clamp
     lighting.x = std::min(1.0, lighting.x);
     lighting.y = std::min(1.0, lighting.y);
@@ -142,7 +164,10 @@ Color shade_ray(const Ray& r, const Hit hit, const Object* object, const std::ve
     return lighting;
 }
 
-Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
+Color trace_ray(const Ray& r, const std::vector<Object*>& objects, int depth) {
+    if (depth <= 0){
+        return Color(0,0,0);
+    }
     double minT = std::numeric_limits<double>::max();
     Object* closestObj;
     Hit minHit(Point3(0,0,0));
@@ -156,7 +181,7 @@ Color trace_ray(const Ray& r, const std::vector<Object*>& objects) {
     }
 
     if(minT < std::numeric_limits<double>::max()){
-        return shade_ray(r, minHit, closestObj, objects);
+        return shade_ray(r, minHit, closestObj, objects, depth);
     }
     
     return bkgcolor;
@@ -203,7 +228,7 @@ int main(int argc, char *argv[]){
                 else if(word == "f"){
                     line = line.substr(2, line.length()-2);
                     const char* w = line.c_str();
-                    unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+                    unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
 
                     if (sscanf(w, "%d/%d/%d %d/%d/%d %d/%d/%d", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]) == 9){
                         Point3 v0 = vertexArr[vertexIndex[0]-1];
@@ -220,11 +245,41 @@ int main(int argc, char *argv[]){
 
                         if(mtlInstance){
                             Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, n0, n0, n0, *mtlInstance);
+                            tri->setTex(texLoaded);
                             objects.push_back(tri);
                         }
                         else {
                             Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, n0, n0, n0);
+                            tri->setTex(texLoaded);
                             objects.push_back(tri);
+                        }
+                    }
+                    else if (sscanf(w, "%d/%d %d/%d %d/%d %d/%d", &vertexIndex[0], &uvIndex[0], &vertexIndex[1], &uvIndex[1], &vertexIndex[2], &uvIndex[2], &vertexIndex[3], &uvIndex[3]) == 8){
+                        Point3 v0 = vertexArr[vertexIndex[0]-1];
+                        Point3 v1 = vertexArr[vertexIndex[1]-1];
+                        Point3 v2 = vertexArr[vertexIndex[2]-1];
+                        Point3 v3 = vertexArr[vertexIndex[3]-1];
+
+                        UV uv0 = textureUVArr[uvIndex[0]-1];
+                        UV uv1 = textureUVArr[uvIndex[1]-1];
+                        UV uv2 = textureUVArr[uvIndex[2]-1];
+                        UV uv3 = textureUVArr[uvIndex[3]-1];
+
+                        if(mtlInstance){
+                            Triangle* tri1 = new Triangle(v0, v1, v2, uv0, uv1, uv2, *mtlInstance);
+                            Triangle* tri2 = new Triangle(v0, v2, v3, uv0, uv2, uv3, *mtlInstance);
+                            tri1->setTex(texLoaded);
+                            tri2->setTex(texLoaded);
+                            objects.push_back(tri1);
+                            objects.push_back(tri2);
+                        }
+                        else {
+                            Triangle* tri1 = new Triangle(v0, v1, v2, uv0, uv1, uv2);
+                            Triangle* tri2 = new Triangle(v0, v2, v3, uv0, uv2, uv3);
+                            tri1->setTex(texLoaded);
+                            tri2->setTex(texLoaded);
+                            objects.push_back(tri1);
+                            objects.push_back(tri2);
                         }
                     }
                     else if (sscanf(w, "%d//%d %d//%d %d//%d", &vertexIndex[0], &normalIndex[0], &vertexIndex[1], &normalIndex[1], &vertexIndex[2], &normalIndex[2]) == 6){
@@ -253,13 +308,14 @@ int main(int argc, char *argv[]){
                         UV uv0 = textureUVArr[uvIndex[0]-1];
                         UV uv1 = textureUVArr[uvIndex[1]-1];
                         UV uv2 = textureUVArr[uvIndex[2]-1];
-
                         if(mtlInstance){
                             Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2, *mtlInstance);
+                            tri->setTex(texLoaded);
                             objects.push_back(tri);
                         }
                         else {
                             Triangle* tri = new Triangle(v0, v1, v2, uv0, uv1, uv2);
+                            tri->setTex(texLoaded);
                             objects.push_back(tri);
                         }
                     }
@@ -366,10 +422,12 @@ int main(int argc, char *argv[]){
                     Point3 spherePos = Point3(std::stod(x),std::stod(y),std::stod(z));
                     if(mtlInstance){
                         Sphere* sphere = new Sphere(spherePos, std::stod(rad), *mtlInstance);
+                        sphere->setTex(texLoaded);
                         objects.push_back(sphere);
                     }
                     else{
                         Sphere* sphere = new Sphere(spherePos, std::stod(rad));
+                        sphere->setTex(texLoaded);
                         objects.push_back(sphere);
                     }
                     
@@ -398,6 +456,8 @@ int main(int argc, char *argv[]){
                     std::string kd;
                     std::string ks;
                     std::string n;
+                    std::string opacity;
+                    std::string refraction;
 
                     ss >> r;
                     ss >> g;
@@ -409,6 +469,8 @@ int main(int argc, char *argv[]){
                     ss >> kd;
                     ss >> ks;
                     ss >> n;
+                    ss >> opacity;
+                    ss >> refraction;
 
                     Color mat = Color(std::stod(r),std::stod(g),std::stod(b));
                     Color sMat = Color(std::stod(sr),std::stod(sg),std::stod(sb));
@@ -416,7 +478,13 @@ int main(int argc, char *argv[]){
                     double Kd = std::stod(kd);
                     double Ks = std::stod(ks);
                     double N = std::stod(n);
-                    mtlInstance = new Material(mat, sMat, Ka, Kd, Ks, N);
+                    double op = std::stod(opacity);
+                    double ref = std::stod(refraction);
+                    bool hasTex = false;
+                    if(image.size() > 0){
+                        hasTex = true;
+                    }
+                    mtlInstance = new Material(mat, sMat, Ka, Kd, Ks, N, op, ref, hasTex);
                 }
                 else if(word == "light"){
 
@@ -488,7 +556,7 @@ int main(int argc, char *argv[]){
             Vector3 rayDir = lowerLeftCorner + u*horizontal + v*vertical - eye;
             rayDir.normalize();
             Ray r(eye, rayDir);
-            Color pixel = trace_ray(r, objects);
+            Color pixel = trace_ray(r, objects, 2);
             OutputColor(output_stream, pixel);
             
         }

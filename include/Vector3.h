@@ -24,7 +24,7 @@ class Vector3 {
         double length() const; 
         Vector3 operator+(const Vector3& rhs);
         Vector3 operator-(const Vector3& rhs);
-        Vector3 operator-();
+        Vector3 operator-() const { return Vector3(-x, -y, -z); }
         Vector3 operator/(const double num);
         void print() const;
     public:
@@ -67,6 +67,17 @@ inline Vector3 cross(const Vector3 &u, const Vector3 &v) {
     return Vector3( u.Y() * v.Z() - u.Z() * v.Y(),
                     u.Z() * v.X() - u.X() * v.Z(),
                     u.X() * v.Y() - u.Y() * v.X());
+}
+
+inline Vector3 reflect(const Vector3& v, const Vector3& n) {
+    return v - 2*dot(v,n)*n;
+}
+
+inline Vector3 refract(const Vector3& I, const Vector3& n, double etai_over_etat) {
+    auto cos_theta = fmin(dot(I, n), 1.0);
+    Vector3 right_side =  etai_over_etat * (cos_theta * n - I);
+    Vector3 left_side = sqrt(1-(etai_over_etat*etai_over_etat) * (1-(cos_theta*cos_theta))) * -n;
+    return left_side + right_side;
 }
 
 #endif
